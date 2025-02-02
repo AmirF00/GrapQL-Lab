@@ -1,0 +1,46 @@
+type Message {
+  id: ID!
+  content: String!
+  sender: User!
+  room: String!
+  timestamp: String!
+  metadata: JSONData
+}
+
+type TypingStatus {
+  user: User!
+  room: String!
+  isTyping: Boolean!
+}
+
+type UserPresence {
+  user: User!
+  status: String!
+  lastSeen: String!
+}
+
+extend type Query {
+  getRoomMessages(room: String!): [Message!]!
+  getActiveUsers(room: String!): [UserPresence!]!
+}
+
+extend type Mutation {
+  sendMessage(room: String!, content: String!, metadata: JSONData): Message!
+  setTypingStatus(room: String!, isTyping: Boolean!): Boolean!
+  joinRoom(room: String!): Boolean!
+  leaveRoom(room: String!): Boolean!
+}
+
+extend type Subscription {
+  # Vulnerable: No rate limiting or validation
+  messageReceived(room: String!): Message!
+  
+  # Vulnerable: Can subscribe to any user's typing status
+  userTyping(room: String!): TypingStatus!
+  
+  # Vulnerable: Can track any user's presence
+  userPresence(userId: ID!): UserPresence!
+  
+  # Vulnerable: No validation on room parameter
+  roomActivity(room: String!): JSONData!
+} 

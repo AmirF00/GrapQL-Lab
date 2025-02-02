@@ -1,0 +1,18 @@
+type ExternalResource {
+  url: String!
+  content: String
+  status: Int
+}
+
+extend type Query {
+  # Vulnerable queries that could lead to SSRF
+  fetchExternalResource(url: String!): ExternalResource!
+  fetchProfileImage(imageUrl: String!): String!
+  checkWebhookStatus(webhookUrl: String!): Boolean!
+}
+
+extend type Mutation {
+  # Vulnerable mutations
+  setWebhook(url: String!): Boolean!
+  importDataFromUrl(sourceUrl: String!): String!
+} 

@@ -1,0 +1,194 @@
+GraphQL Security Lab - Setup Guide
+================================
+
+Prerequisites
+------------
+1. Node.js (v18 or higher)
+2. MongoDB (v6 or higher)
+3. Redis (v6 or higher)
+4. Git
+
+Step 1: Clone and Install
+------------------------
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/graphql-security-lab.git
+cd graphql-security-lab
+
+# Install dependencies
+npm install
+
+Step 2: Environment Setup
+------------------------
+Create a .env file in the root directory with the following variables:
+
+# Server Configuration
+PORT=4000
+NODE_ENV=development
+
+# MongoDB Configuration
+MONGODB_URI=mongodb://localhost:27017/graphql-security-lab
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password
+
+# JWT Configuration
+JWT_SECRET=your_very_long_and_secure_secret_key
+JWT_EXPIRATION=7d
+
+# Rate Limiting
+RATE_LIMIT_WINDOW=15
+RATE_LIMIT_MAX_REQUESTS=100
+
+Step 3: Database Setup
+---------------------
+1. Start MongoDB:
+   # For macOS/Linux
+   sudo service mongod start
+   # For Windows
+   net start MongoDB
+
+2. Start Redis:
+   # For macOS/Linux
+   sudo service redis-server start
+   # For Windows
+   redis-server
+
+Step 4: Initial Data Setup
+-------------------------
+1. Create initial admin user:
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { signUp(input: { email: \"admin@test.com\", password: \"admin123\", name: \"Admin User\" }) { token user { id } } }"
+}'
+
+2. Create test users:
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { signUp(input: { email: \"user1@test.com\", password: \"password123\", name: \"User 1\" }) { token user { id } } }"
+}'
+
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { signUp(input: { email: \"user2@test.com\", password: \"password123\", name: \"User 2\" }) { token user { id } } }"
+}'
+
+Step 5: Start the Server
+-----------------------
+# Development mode with nodemon
+npm run dev
+
+# Production mode
+npm start
+
+The GraphQL playground will be available at: http://localhost:4000/graphql
+
+Directory Structure
+------------------
+/
+├── src/
+│   ├── graphql/
+│   │   ├── schema/
+│   │   │   ├── typeDefs/
+│   │   │   ├── resolvers/
+│   │   │   └── scalars/
+│   │   └── directives/
+│   ├── models/
+│   ├── middleware/
+│   └── utils/
+├── uploads/
+└── tests/
+
+Important Notes
+--------------
+1. Security Considerations:
+   - This is a vulnerable lab environment
+   - Do NOT deploy in production
+   - Use isolated testing environment
+   - Don't use real credentials
+
+2. Troubleshooting:
+   - Check MongoDB connection
+   - Verify Redis is running
+   - Ensure correct Node.js version
+   - Check port availability
+
+3. Common Issues:
+   - MongoDB connection refused: Check if MongoDB is running
+   - Redis connection error: Verify Redis server status
+   - Port already in use: Change PORT in .env
+   - JWT verification failed: Check JWT_SECRET in .env
+
+4. System Requirements:
+   - Memory: 4GB RAM minimum
+   - Storage: 1GB free space
+   - CPU: 2 cores recommended
+   - Network: Internet connection for npm packages
+
+5. Optional Tools:
+   - MongoDB Compass (GUI for MongoDB)
+   - Redis Commander (GUI for Redis)
+   - Postman (API testing)
+   - VS Code with GraphQL extension
+
+6. Development Tools:
+   - nodemon (installed as devDependency)
+   - GraphQL Playground (built-in)
+   - Debug logging (enabled in development)
+
+7. Rate Limiting:
+   - Default: 100 requests per 15 minutes
+   - Can be adjusted in .env
+   - Redis required for rate limiting
+
+8. File Uploads:
+   - Maximum file size: 10MB
+   - Supported formats: jpg, png, pdf
+   - Stored in /uploads directory
+
+9. WebSocket Support:
+   - Required for subscriptions
+   - Default WS port: 4000
+   - Subscriptions endpoint: ws://localhost:4000/graphql
+
+10. Environment Modes:
+    - development: Detailed errors, GraphQL playground
+    - production: Limited error details, no playground
+    - testing: Separate database, mocked services
+
+After Setup Verification
+-----------------------
+1. Test GraphQL Playground:
+   - Open http://localhost:4000/graphql
+   - Execute a simple query:
+     {
+       getProducts {
+         id
+         name
+         price
+       }
+     }
+
+2. Verify WebSocket:
+   - Test subscription connection
+   - Check for successful handshake
+
+3. Check Rate Limiting:
+   - Execute multiple requests
+   - Verify limit enforcement
+
+4. Test File Upload:
+   - Verify uploads directory permissions
+   - Test file upload mutation
+
+5. Database Verification:
+   - Check MongoDB collections
+   - Verify indices
+   - Test basic CRUD operations
+
+Now you're ready to start testing the security vulnerabilities!
+Refer to REQUESTS.txt for specific test cases.

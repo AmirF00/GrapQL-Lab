@@ -1,0 +1,28 @@
+scalar Date
+
+type Note {
+  id: ID!
+  title: String!
+  content: String!
+  isPrivate: Boolean!
+  owner: User!
+  createdAt: Date
+  updatedAt: Date
+}
+
+extend type Query {
+  # Vulnerable queries
+  getNoteById(id: ID!): Note        # Missing proper authorization
+  getAllNotes: [Note!]!             # No filtering of private notes
+  searchNotes(query: String!): [Note!]! # Information disclosure through search
+  # Add these vulnerable queries
+  searchUsers(query: String!): [User!]!
+  advancedFilter(filterString: String!): [Note!]!
+  findUsersByRole(roleFilter: String!): [User!]!
+}
+
+extend type Mutation {
+  createNote(title: String!, content: String!, isPrivate: Boolean!): Note!
+  updateNote(id: ID!, title: String, content: String): Note! # Missing ownership check
+  deleteNote(id: ID!): Boolean! # Missing ownership check
+} 

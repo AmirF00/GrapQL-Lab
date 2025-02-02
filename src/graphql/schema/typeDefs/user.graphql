@@ -1,0 +1,50 @@
+scalar Date
+
+directive @auth(requires: Role = USER) on FIELD_DEFINITION
+
+enum Role {
+  USER
+  ADMIN
+}
+
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  role: Role!
+  createdAt: Date!
+}
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+input SignUpInput {
+  email: String!
+  password: String!
+  name: String!
+}
+
+input SignInInput {
+  email: String!
+  password: String!
+}
+
+type Query {
+  me: User @auth
+  users: [User!]! @auth(requires: ADMIN)
+  user(id: ID!): User @auth
+}
+
+type Mutation {
+  signUp(input: SignUpInput!): AuthPayload!
+  signIn(input: SignInInput!): AuthPayload!
+  updateUser(id: ID!, name: String!): User! @auth
+  deleteUser(id: ID!): Boolean! @auth(requires: ADMIN)
+  createAdmin(input: SignUpInput!, secretKey: String!): AuthPayload!
+}
+
+type Subscription {
+  userCreated: User! @auth
+}

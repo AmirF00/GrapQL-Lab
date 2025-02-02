@@ -1,0 +1,9 @@
+type Friend {
+  id: ID!
+  name: String!
+  friends: [Friend!]! @auth  # Recursive relationship
+}
+
+extend type Query {
+  getFriends: [Friend!]! @auth
+} 

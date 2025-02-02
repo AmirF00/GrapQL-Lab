@@ -1,0 +1,58 @@
+# Vulnerable custom scalar (no validation)
+scalar Price
+scalar JSONData
+
+type Product {
+  id: ID!
+  name: String!
+  price: Price!
+  description: String
+}
+
+type OrderItem {
+  product: Product!
+  quantity: Int!
+  price: Price!
+}
+
+type Order {
+  id: ID!
+  items: [OrderItem!]!
+  totalAmount: Price!
+  status: String!
+  metadata: JSONData
+  user: User!
+  createdAt: String!
+}
+
+input ProductInput {
+  id: ID!
+  quantity: Int!
+  # Vulnerable: no price validation
+  customPrice: Price
+}
+
+input OrderInput {
+  items: [ProductInput!]!
+  # Vulnerable: unvalidated JSON
+  metadata: JSONData
+  # Vulnerable: no status validation
+  status: String
+}
+
+extend type Query {
+  getOrder(id: ID!): Order
+  getOrders(status: String): [Order!]!
+  searchOrders(filter: JSONData!): [Order!]!
+  getProducts: [Product!]!
+  getProduct(id: ID!): Product
+}
+
+extend type Mutation {
+  createOrder(input: OrderInput!): Order!
+  updateOrderStatus(id: ID!, status: String!): Order!
+  addOrderMetadata(id: ID!, metadata: JSONData!): Order!
+  bulkCreateOrders(orders: [OrderInput!]!): [Order!]!
+  createProduct(name: String!, price: Price!, description: String): Product!
+  updateProduct(id: ID!, price: Price): Product!
+} 

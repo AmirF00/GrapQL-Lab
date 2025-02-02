@@ -1,0 +1,171 @@
+GraphQL Security Lab - Code Architecture Guide
+===========================================
+
+Project Overview
+---------------
+This is a deliberately vulnerable GraphQL server demonstrating common security issues. The project uses Express.js with Apollo Server and includes various vulnerable endpoints for educational purposes.
+
+Directory Structure
+------------------
+/src
+  /config         - Configuration files
+  /graphql        - GraphQL related code
+    /schema       - Schema definitions
+      /typeDefs   - Type definitions
+      /resolvers  - Resolvers implementation
+      /scalars    - Custom scalar types
+  /middleware     - Express and GraphQL middleware
+  /models         - Mongoose models
+  /utils          - Utility functions
+
+Key Files and Their Purpose
+--------------------------
+
+1. Server Setup (server.js)
+-------------------------
+Location: /server.js
+Purpose: Main application entry point
+Key Features:
+- Express and Apollo Server setup
+- WebSocket configuration for subscriptions
+- Database connections (MongoDB, Redis)
+- Rate limiting (vulnerable implementation)
+- Logging configuration
+
+2. GraphQL Schema Files
+----------------------
+
+A. Type Definitions (/src/graphql/schema/typeDefs/):
+
+vulnerable_orders.graphql:
+- Defines order and product related types
+- Vulnerable points:
+  * Custom Price scalar without validation
+  * JSONData scalar without sanitization
+  * No input validation on quantities
+  * Unrestricted status values
+  * Unvalidated metadata
+Reference: Lines 1-58
+
+vulnerable_notes.graphql:
+- Defines note management system
+- Vulnerable points:
+  * Missing access control
+  * No private note filtering
+  * Unrestricted search capabilities
+Reference: Lines 1-28
+
+vulnerable_ssrf.graphql:
+- Defines external resource fetching
+- Vulnerable points:
+  * Unrestricted URL inputs
+  * No protocol validation
+  * No internal network protection
+Reference: Lines 1-18
+
+B. Resolvers (/src/graphql/schema/resolvers/):
+
+vulnerable_orders.resolver.js:
+- Implements order management logic
+- Vulnerabilities:
+  * No price validation (negative prices)
+  * No quantity validation (negative quantities)
+  * Direct metadata injection
+  * NoSQL injection in filters
+  * No status validation
+Reference: Lines 1-138
+
+vulnerable_nosql.resolver.js:
+- Implements user and note search
+- Vulnerabilities:
+  * Direct string interpolation in queries
+  * Unvalidated JSON parsing
+  * NoSQL injection vectors
+Reference: Lines 1-29
+
+vulnerable_notes.resolver.js:
+- Implements note CRUD operations
+- Vulnerabilities:
+  * Missing authorization checks
+  * No ownership verification
+  * Information disclosure
+Reference: Lines 1-59
+
+vulnerable_ssrf.resolver.js:
+- Implements external resource fetching
+- Vulnerabilities:
+  * Unrestricted URL fetching
+  * No protocol validation
+  * Potential internal network access
+Reference: Lines 47-77
+
+3. Custom Scalars
+----------------
+Location: /src/graphql/schema/scalars/vulnerable_scalars.js
+Purpose: Define custom GraphQL scalar types
+Vulnerabilities:
+- Price scalar:
+  * No type validation
+  * Accepts negative values
+  * No range checking
+- JSONData scalar:
+  * No sanitization
+  * Prototype pollution risk
+  * Direct parsing of user input
+
+4. Models
+---------
+Location: /src/models/
+Files:
+- order.model.js: Order schema definition
+- product.model.js: Product schema definition
+- note.model.js: Note schema definition
+- user.model.js: User schema definition
+
+Vulnerability Categories
+----------------------
+
+1. Input Validation Issues:
+- Price manipulation (Orders)
+- Negative quantities (Orders)
+- Invalid status values (Orders)
+- Unrestricted metadata (Orders)
+Example: createOrder mutation accepts negative prices and quantities
+
+2. Access Control Issues:
+- Missing ownership checks (Notes)
+- Unauthorized access (Notes)
+- Private data exposure (Notes)
+Example: updateNote mutation doesn't verify note ownership
+
+3. NoSQL Injection:
+- String interpolation in queries
+- Direct JSON parsing
+- Unvalidated filters
+Example: searchUsers query uses direct string interpolation
+
+4. SSRF Vulnerabilities:
+- Unrestricted URL fetching
+- No protocol validation
+- Internal network access
+Example: fetchExternalResource query accepts any URL
+
+5. Rate Limiting Issues:
+- Missing subscription limits
+- No query depth analysis
+- No complexity limits
+Example: messageReceived subscription has no rate limiting
+
+Testing the Vulnerabilities
+--------------------------
+Each vulnerability type has specific test cases documented in req.txt.
+For setup instructions, refer to setup.txt.
+
+Security Notes
+-------------
+This code is deliberately vulnerable for educational purposes.
+DO NOT use in production environments.
+Always implement proper validation, sanitization, and access controls in real applications.
+
+For detailed test cases and exploitation examples, see req.txt
+For setup and deployment instructions, see setup.txt
