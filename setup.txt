@@ -11,8 +11,8 @@ Prerequisites
 Step 1: Clone and Install
 ------------------------
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/graphql-security-lab.git
-cd graphql-security-lab
+git clone git@github.com:AmirF00/GrapQL-Lab.git
+cd GrapQL-Lab
 
 # Install dependencies
 npm install
